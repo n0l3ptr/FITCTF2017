@@ -49,14 +49,14 @@ gdb-peda $ break *0x0806d712
 gdb-peda $ c
 ```
 
-After that I stepi'd and tried to figure out what was going on to see if I could find main. I was having a hard time determining where main was this way so I had the idea to start the program in peda and then use the peda api to step until the upper byte of eip changed. I thought since the entry point was 0xc40e90 if I checked to see if c4 was not in eip as I stepped I might find the OEP and then eventually main, I bet angr could probably do this faster in hind sight.
+After that I stepi'd and tried to figure out what was going on to see if I could find main. I was having a hard time determining where main was this way so I tried going through the packer. I noticed it was loading code to 0xc42000 and had the idea to start the program in peda and then use the peda api to step until the upper three bytes of eip changed to 00c420. I bet angr could probably do this faster in hind sight.
 
 ```
-gdb-peda $ python while "c4" in peda.execute_redirect('x/xw $eip')[2:4]: print(peda.execute_redirect('stepi'))
+gdb-peda $ python while "c42" not in peda.execute_redirect('x/xw $eip')[2:5]: print(peda.execute_redirect('stepi'))
 
 ```
 
-I ran the command for about 3 minutes or so, it could have been faster if I didn't want to print out the context sections in peda but it looked cool that way. I realized my eips as I stepped were in the 0xc2???? range. So I found that I had switch to that eip at 0xc420c9 so I knew that was the first place I needed to put a breakpoint. I knew my binary eventually ran at eip 0x080????? something so I ran the script again this time checking that c2 was not in eip. I found _start next at 0x80487c3 I recognized it immediately. So I knew main was at 0x80488e4 since it was the first argument past to __libc_start_main within _start.  
+I ran the command for about 5 minutes or so, it could have been faster if I didn't want to print out the context sections in peda but it looked cool that way. I realized my eips as I stepped were in the 0xc2???? range. So I found that I had switch to that eip at 0xc4111c so I knew that was the first place I needed to put a breakpoint. I knew my binary eventually ran at eip 0x080????? something so I ran the script again this time checking that c2 was not in eip. I found _start next at 0x80487c3 I recognized it immediately. So I knew main was at 0x80488e4 since it was the first argument past to __libc_start_main within _start.  
 ![](img/_start.png)
 
 The following could now get me to main:
